@@ -1,0 +1,23 @@
+# Instructions & Operations Manifest
+
+See full markdown instructions in `instructions.md`.
+
+## Single-Command Production Execution
+```bash
+npm run start:all
+```
+- Concurrently launches FastAPI backend on `:8000` and Vite frontend on `:5173`.
+- Root orchestration powered by `concurrently`.
+
+## Individual Services
+```bash
+npm run start:backend     # Uvicorn app.main:app on 8000
+npm run start:frontend    # Vite React on 5173
+npm run seed              # Seed Operation Golden Vineyard demo
+```
+
+## System Verification
+```bash
+python3 validate_full_pipeline.py
+python3 -m pytest
+```

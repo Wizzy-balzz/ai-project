@@ -1,0 +1,16 @@
+{
+  "name": "graph-attack-path-predictor-ai",
+  "version": "1.0.0",
+  "description": "Graph-Based Attack Path Predictor AI - Luxury Editorial SOC Interface",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "seed": "python3 backend/seed_demo_data.py",
+    "start:backend": "cd backend && uvicorn app.main:app --port 8000 --reload",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:all": "concurrently -n \"BACKEND,FRONTEND\" -c \"amber,emerald\" \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

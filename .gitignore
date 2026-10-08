@@ -1,10 +1,26 @@
-@"
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 .venv/
 venv/
-__pycache__/
-*.pyc
+*.db
+*.db-journal
+*.pt
+checkpoints/
+
+# Node & Frontend
+node_modules/
+dist/
+build/
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+
+# Uploads & Scratch
+uploads/
+scratch/
 .vscode/
-"@ | Out-File -Encoding utf8 .gitignore
+.idea/
+*.log

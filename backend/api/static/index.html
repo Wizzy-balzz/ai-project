@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attack Path Predictor AI | Defensive Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Cytoscape.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb' },
+            soc: { 900: '#0b0f19', 800: '#111827', 700: '#1f2937', 600: '#374151' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    #cy { width: 100%; height: 100%; min-height: 520px; background: #0b0f19; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-soc-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-600">
+
+  <!-- Top Header -->
+  <header class="border-b border-soc-700 bg-soc-800/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Graph-Based Attack Path Predictor AI
+          <span class="text-xs px-2 py-0.5 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700">GNN GraphSAGE</span>
+        </h1>
+        <p class="text-xs text-slate-400">Phase 8: Defensive Cybersecurity Research Platform</p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 bg-soc-900 px-3 py-1.5 rounded-lg border border-soc-700 text-sm">
+        <span class="text-slate-400 text-xs font-medium">Scenario:</span>
+        <select id="scenario-select" class="bg-transparent text-white focus:outline-none cursor-pointer text-sm">
+          <option value="small">Small SOHO (10 nodes)</option>
+          <option value="medium">Medium Enterprise (25 nodes)</option>
+          <option value="large">Large Segmented (50 nodes)</option>
+        </select>
+      </div>
+
+      <button id="btn-analyze" onclick="runAnalysis()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition flex items-center space-x-2 shadow-lg shadow-blue-600/30">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Analyze Paths</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Disclaimer Banner -->
+  <div class="bg-amber-950/40 border-b border-amber-800/40 px-6 py-1.5 text-xs text-amber-300/90 flex items-center justify-between">
+    <span>⚠️ <strong>Defensive Research Notice:</strong> All topologies, vulnerabilities, and telemetry are synthetically procedurally generated (SYN- prefix).</span>
+    <span id="gnn-status" class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> GNN Checkpoint Loaded</span>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-soc-800 p-4 rounded-xl border border-soc-700 shadow-sm">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Network Risk Tier</div>
+      <div class="flex items-baseline space-x-2 mt-1">
+        <span id="kpi-risk-tier" class="text-xl font-bold text-rose-400">CRITICAL</span>
+        <span id="kpi-risk-score" class="text-sm text-slate-400">(0.78)</span>
+      </div>
+    </div>
+
+    <div class="bg-soc-800 p-4 rounded-xl border border-soc-700 shadow-sm">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Top Attack Paths</div>
+      <div class="flex items-baseline space-x-2 mt-1">
+        <span id="kpi-paths-count" class="text-xl font-bold text-amber-400">5</span>
+        <span class="text-xs text-slate-400">Ranked by risk</span>
+      </div>
+    </div>
+
+    <div class="bg-soc-800 p-4 rounded-xl border border-soc-700 shadow-sm">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Critical Assets Target</div>
+      <div class="flex items-baseline space-x-2 mt-1">
+        <span id="kpi-assets-count" class="text-xl font-bold text-purple-400">2</span>
+        <span class="text-xs text-slate-400">Assets exposed</span>
+      </div>
+    </div>
+
+    <div class="bg-soc-800 p-4 rounded-xl border border-soc-700 shadow-sm">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Primary Chokepoint</div>
+      <div class="flex items-baseline space-x-2 mt-1">
+        <span id="kpi-chokepoint" class="text-sm font-bold text-emerald-400 truncate">Computing...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Body Grid -->
+  <main class="px-6 pb-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px]">
+
+    <!-- Graph Topology Container (7 cols) -->
+    <div class="lg:col-span-7 bg-soc-800 rounded-xl border border-soc-700 flex flex-col overflow-hidden relative shadow-lg">
+      <div class="px-4 py-2.5 border-b border-soc-700 bg-soc-900/50 flex items-center justify-between text-xs font-medium">
+        <div class="flex items-center space-x-4">
+          <span class="text-white font-semibold">Network Graph Topology</span>
+          <span class="flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Entry</span>
+          <span class="flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block"></span> Critical</span>
+          <span class="flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> High CVSS</span>
+        </div>
+        <div class="space-x-1.5">
+          <button onclick="cy.fit()" class="px-2 py-1 bg-soc-700 hover:bg-soc-600 rounded text-slate-200">Fit View</button>
+          <button onclick="cy.layout({name:'cose', animate:true}).run()" class="px-2 py-1 bg-soc-700 hover:bg-soc-600 rounded text-slate-200">Re-Layout</button>
+          <button onclick="resetGraphHighlight()" class="px-2 py-1 bg-soc-700 hover:bg-soc-600 rounded text-slate-200">Clear Path</button>
+        </div>
+      </div>
+
+      <!-- Canvas -->
+      <div id="cy" class="flex-1"></div>
+
+      <!-- Node Details Hover Inspector -->
+      <div id="inspector" class="absolute bottom-3 left-3 bg-soc-900/90 border border-soc-600 p-3 rounded-lg text-xs max-w-xs backdrop-blur hidden shadow-xl z-20">
+        <div id="insp-title" class="font-bold text-white text-sm mb-1">Node Details</div>
+        <div id="insp-body" class="text-slate-300 space-y-0.5"></div>
+      </div>
+    </div>
+
+    <!-- Sidebar / Panels (5 cols) -->
+    <div class="lg:col-span-5 bg-soc-800 rounded-xl border border-soc-700 flex flex-col overflow-hidden shadow-lg">
+      <!-- Tabs Navigation -->
+      <div class="border-b border-soc-700 bg-soc-900/50 flex text-xs font-medium">
+        <button id="tab-btn-paths" onclick="switchTab('paths')" class="flex-1 py-3 text-center border-b-2 border-blue-500 text-blue-400 font-semibold transition">
+          🎯 Top-K Paths
+        </button>
+        <button id="tab-btn-xai" onclick="switchTab('xai')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          🧠 Explainable AI
+        </button>
+        <button id="tab-btn-mit" onclick="switchTab('mit')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+          🛡️ Mitigations
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 p-4 overflow-y-auto custom-scroll max-h-[580px]">
+
+        <!-- Tab 1: Top-K Paths -->
+        <div id="tab-paths" class="space-y-3">
+          <div class="text-xs text-slate-400 mb-2">Click any attack path to trace and highlight the route on the graph.</div>
+          <div id="paths-list" class="space-y-2">
+            <div class="text-center py-10 text-slate-500 text-sm">Loading paths...</div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Explainable AI -->
+        <div id="tab-xai" class="space-y-4 hidden">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+              <span>Attack Kill-Chain Narrative</span>
+            </h3>
+            <p id="xai-summary" class="text-xs text-slate-300 mt-1 bg-soc-900/70 p-3 rounded-lg border border-soc-700 leading-relaxed">
+              Run analysis to generate explanations.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Risk Factor Attribution</h4>
+            <div class="space-y-2 text-xs" id="xai-factors"></div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Identified Attack Chokepoints</h4>
+            <div id="chokepoint-list" class="space-y-1.5"></div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Proactive Mitigations -->
+        <div id="tab-mit" class="space-y-3 hidden">
+          <div class="text-xs text-slate-400">Prioritized defensive recommendations to sever multi-hop attack routes:</div>
+
+          <div id="mitigation-feedback" class="hidden p-3 bg-emerald-950/40 border border-emerald-700 rounded-lg text-xs text-emerald-300 space-y-1"></div>
+
+          <div id="mitigations-list" class="space-y-2.5">
+            <div class="text-center py-10 text-slate-500 text-sm">No mitigations generated yet.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Script Logic -->
+  <script>
+    let cy = null;
+    let currentAnalysis = null;
+    let activePathId = null;
+
+    // Initialize Cytoscape
+    function initCy() {
+      cy = cytoscape({
+        container: document.getElementById('cy'),
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'label': 'data(label)',
+              'color': '#cbd5e1',
+              'font-size': '10px',
+              'text-valign': 'bottom',
+              'text-margin-y': '5px',
+              'background-color': '#475569',
+              'width': '26px',
+              'height': '26px',
+              'border-width': 2,
+              'border-color': '#1e293b'
+            }
+          },
+          {
+            selector: 'node[type="entry"]',
+            style: {
+              'background-color': '#f59e0b',
+              'border-color': '#d97706',
+              'border-width': 3,
+              'width': '32px',
+              'height': '32px'
+            }
+          },
+          {
+            selector: 'node[type="critical"]',
+            style: {
+              'background-color': '#a855f7',
+              'border-color': '#9333ea',
+              'border-width': 3,
+              'width': '34px',
+              'height': '34px'
+            }
+          },
+          {
+            selector: 'node[type="vulnerable"]',
+            style: {
+              'background-color': '#ef4444',
+              'border-color': '#b91c1c'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 2,
+              'line-color': '#334155',
+              'target-arrow-color': '#475569',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'arrow-scale': 1.1
+            }
+          },
+          {
+            selector: 'edge[has_firewall]',
+            style: {
+              'line-color': '#10b981',
+              'target-arrow-color': '#10b981'
+            }
+          },
+          // Highlighted Attack Path Styles
+          {
+            selector: 'node.highlighted',
+            style: {
+              'background-color': '#f43f5e',
+              'border-color': '#ffe4e6',
+              'border-width': 4,
+              'color': '#fff',
+              'font-weight': 'bold',
+              'scale': 1.25
+            }
+          },
+          {
+            selector: 'edge.highlighted',
+            style: {
+              'line-color': '#f43f5e',
+              'target-arrow-color': '#f43f5e',
+              'width': 4,
+              'line-style': 'solid'
+            }
+          }
+        ],
+        layout: { name: 'cose', animate: false }
+      });
+
+      // Hover Inspector
+      cy.on('mouseover', 'node', function(e) {
+        const d = e.target.data();
+        const insp = document.getElementById('inspector');
+        document.getElementById('insp-title').innerText = d.label;
+        document.getElementById('insp-body').innerHTML = `
+          <div><strong>Role:</strong> ${d.node_role}</div>
+          <div><strong>IP:</strong> ${d.ip}</div>
+          <div><strong>Max CVSS:</strong> <span class="${d.max_cvss >= 7 ? 'text-rose-400 font-bold' : ''}">${d.max_cvss}</span></div>
+          <div><strong>Vulnerabilities:</strong> ${d.vuln_count}</div>
+          <div><strong>Entry Point:</strong> ${d.is_entry ? 'Yes' : 'No'}</div>
+          <div><strong>Critical Asset:</strong> ${d.is_critical ? 'Yes' : 'No'}</div>
+        `;
+        insp.classList.remove('hidden');
+      });
+
+      cy.on('mouseout', 'node', function() {
+        document.getElementById('inspector').classList.add('hidden');
+      });
+    }
+
+    // Tab Switching
+    function switchTab(tab) {
+      ['paths', 'xai', 'mit'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).className = "flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition";
+      });
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).className = "flex-1 py-3 text-center border-b-2 border-blue-500 text-blue-400 font-semibold transition";
+    }
+
+    // Fetch and Load Graph
+    async function loadGraphData(scenarioId) {
+      const res = await fetch(`/api/graph/${scenarioId}`);
+      const data = await res.json();
+      cy.elements().remove();
+      cy.add(data.nodes);
+      cy.add(data.edges);
+      cy.layout({
+        name: 'cose',
+        nodeRepulsion: 4500,
+        idealEdgeLength: 60,
+        animate: false
+      }).run();
+      cy.fit();
+    }
+
+    // Run Full Analysis
+    async function runAnalysis() {
+      const scenarioId = document.getElementById('scenario-select').value;
+      const btn = document.getElementById('btn-analyze');
+      btn.disabled = true;
+      btn.innerText = "Analyzing...";
+
+      await loadGraphData(scenarioId);
+
+      try {
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario_id: scenarioId, top_k: 5 })
+        });
+        const data = await res.json();
+        currentAnalysis = data;
+        renderAnalysis(data);
+      } catch (err) {
+        console.error(err);
+        alert("Analysis failed: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>Analyze Paths`;
+      }
+    }
+
+    // Render Analysis in UI
+    function renderAnalysis(data) {
+      // KPIs
+      const tierEl = document.getElementById('kpi-risk-tier');
+      tierEl.innerText = data.network_risk_tier;
+      tierEl.className = data.network_risk_tier === 'CRITICAL' ? 'text-xl font-bold text-rose-500' :
+                        data.network_risk_tier === 'HIGH' ? 'text-xl font-bold text-amber-500' : 'text-xl font-bold text-emerald-400';
+      document.getElementById('kpi-risk-score').innerText = `(${data.network_risk_score})`;
+      document.getElementById('kpi-paths-count').innerText = data.top_k_paths.length;
+      document.getElementById('kpi-assets-count').innerText = data.critical_assets_at_risk.length;
+
+      const topCp = data.chokepoints[0];
+      document.getElementById('kpi-chokepoint').innerText = topCp ? topCp.element_label : 'None';
+
+      // Tab 1: Render Paths
+      const pathsContainer = document.getElementById('paths-list');
+      if (data.top_k_paths.length === 0) {
+        pathsContainer.innerHTML = '<div class="text-sm text-slate-500 py-4">No attack paths found reaching targets.</div>';
+      } else {
+        pathsContainer.innerHTML = data.top_k_paths.map((p, idx) => {
+          const tierColor = p.risk_tier === 'CRITICAL' ? 'bg-rose-950 text-rose-300 border-rose-800' :
+                            p.risk_tier === 'HIGH' ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-blue-950 text-blue-300 border-blue-800';
+          return `
+            <div onclick="highlightPath('${p.path_id}')" class="p-3 bg-soc-900/80 hover:bg-soc-700/80 cursor-pointer rounded-lg border border-soc-700 transition">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <span class="font-bold text-white">#${idx+1} Path (${p.path_length} hops)</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${tierColor}">${p.risk_tier} ${p.risk_score}</span>
+              </div>
+              <div class="text-xs text-slate-300 truncate">${p.node_labels.join(' → ')}</div>
+              <div class="w-full bg-soc-700 h-1 rounded-full mt-2 overflow-hidden">
+                <div class="bg-rose-500 h-1 rounded-full" style="width: ${p.risk_score * 100}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Tab 2: Render XAI
+      if (data.explanations.length > 0) {
+        document.getElementById('xai-summary').innerText = data.explanations[0].path_summary;
+        const factors = data.explanations[0].factor_breakdown;
+        document.getElementById('xai-factors').innerHTML = `
+          <div><div class="flex justify-between text-slate-300 mb-0.5"><span>GNN Node Attack Probability</span><span>${(factors.gnn_node_likelihood * 100).toFixed(0)}%</span></div><div class="h-1.5 bg-soc-700 rounded-full"><div class="h-1.5 bg-blue-500 rounded-full" style="width:${factors.gnn_node_likelihood * 100}%"></div></div></div>
+          <div><div class="flex justify-between text-slate-300 mb-0.5"><span>Edge Traversal Exploitability</span><span>${(factors.edge_traversal_exploitability * 100).toFixed(0)}%</span></div><div class="h-1.5 bg-soc-700 rounded-full"><div class="h-1.5 bg-amber-500 rounded-full" style="width:${factors.edge_traversal_exploitability * 100}%"></div></div></div>
+          <div><div class="flex justify-between text-slate-300 mb-0.5"><span>Vulnerability CVSS Severity</span><span>${(factors.cvss_vulnerability_severity * 100).toFixed(0)}%</span></div><div class="h-1.5 bg-soc-700 rounded-full"><div class="h-1.5 bg-rose-500 rounded-full" style="width:${factors.cvss_vulnerability_severity * 100}%"></div></div></div>
+        `;
+      }
+
+      // Chokepoints
+      document.getElementById('chokepoint-list').innerHTML = data.chokepoints.map(cp => `
+        <div class="p-2 bg-soc-900/60 rounded border border-soc-700 flex items-center justify-between text-xs">
+          <div><span class="text-white font-medium">${cp.element_label}</span> <span class="text-slate-400">(${cp.element_type})</span></div>
+          <span class="text-amber-400 font-bold">${cp.intersected_paths_count} Paths</span>
+        </div>
+      `).join('');
+
+      // Tab 3: Render Mitigations
+      document.getElementById('mitigations-list').innerHTML = data.recommended_mitigations.map(m => `
+        <div class="p-3 bg-soc-900/80 rounded-lg border border-soc-700 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-white">${m.title}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold ${m.priority === 'IMMEDIATE' ? 'bg-rose-900 text-rose-300' : 'bg-blue-900 text-blue-300'}">${m.priority}</span>
+          </div>
+          <p class="text-xs text-slate-400">${m.description}</p>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-emerald-400 font-semibold">Cuts ${m.severed_paths_count} paths (~${m.estimated_risk_reduction_pct.toFixed(0)}% reduction)</span>
+            <button onclick="simulateDefense('${m.mitigation_id}', '${m.action_type}', '${m.target_element}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold">⚡ Simulate</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Auto highlight top path
+      if (data.top_k_paths.length > 0) {
+        highlightPath(data.top_k_paths[0].path_id);
+      }
+    }
+
+    // Highlight Attack Path in Graph
+    function highlightPath(pathId) {
+      if (!currentAnalysis) return;
+      activePathId = pathId;
+      const pathObj = currentAnalysis.top_k_paths.find(p => p.path_id === pathId);
+      if (!pathObj) return;
+
+      resetGraphHighlight();
+
+      // Highlight nodes
+      pathObj.node_ids.forEach(nid => {
+        const el = cy.$id(nid);
+        if (el) el.addClass('highlighted');
+      });
+
+      // Highlight edges
+      pathObj.edge_pairs.forEach(([u, v]) => {
+        const edge = cy.edges(`[source = "${u}"][target = "${v}"]`);
+        if (edge) edge.addClass('highlighted');
+      });
+    }
+
+    function resetGraphHighlight() {
+      cy.elements().removeClass('highlighted');
+    }
+
+    // Simulate Defense Action
+    async function simulateDefense(mitId, actionType, target) {
+      const scenarioId = document.getElementById('scenario-select').value;
+      const res = await fetch('/api/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenario_id: scenarioId,
+          mitigation_id: mitId,
+          action_type: actionType,
+          target_element: target
+        })
+      });
+      const sim = await res.json();
+
+      const fb = document.getElementById('mitigation-feedback');
+      fb.classList.remove('hidden');
+      fb.innerHTML = `
+        <div class="font-bold text-white text-xs">Defense Applied: ${sim.title}</div>
+        <div>✓ Severed <strong>${sim.severed_paths_count}</strong> attack paths.</div>
+        <div>✓ Network risk dropped from <strong>${sim.original_network_risk}</strong> to <strong>${sim.new_network_risk}</strong> (<strong>-${sim.risk_reduction_pct}%</strong>).</div>
+      `;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initCy();
+      runAnalysis();
+    });
+  </script>
+</body>
+</html>

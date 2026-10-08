@@ -377,8 +377,8 @@ class PathGenerator:
         visited: Set[str],
         current_path: List[str],
         results: List[List[str]],
-        per_entry_count: int,
-        total_count_ref: List[int],  # mutable int via list wrapper
+        per_entry_count_ref: List[int],  # mutable int via list wrapper
+        total_count_ref: List[int],      # mutable int via list wrapper
         truncated_ref: List[bool],
     ) -> None:
         """
@@ -394,11 +394,11 @@ class PathGenerator:
         # Emit if we've reached minimum depth
         if current_depth >= self.config.min_path_length:
             results.append(list(current_path))
-            per_entry_count += 1
+            per_entry_count_ref[0] += 1
             total_count_ref[0] += 1
 
         # Check quotas BEFORE recursing
-        if per_entry_count >= self.config.max_paths_per_entry:
+        if per_entry_count_ref[0] >= self.config.max_paths_per_entry:
             truncated_ref[0] = True
             return
         if total_count_ref[0] >= self.config.max_total_paths:
@@ -418,13 +418,16 @@ class PathGenerator:
 
             self._dfs_enumerate(
                 G, neighbor, visited, current_path,
-                results, per_entry_count, total_count_ref, truncated_ref,
+                results, per_entry_count_ref, total_count_ref, truncated_ref,
             )
 
             current_path.pop()
             visited.remove(neighbor)
 
-            # Re-check total quota after each recursive return
+            # Re-check quotas after each recursive return
+            if per_entry_count_ref[0] >= self.config.max_paths_per_entry:
+                truncated_ref[0] = True
+                return
             if total_count_ref[0] >= self.config.max_total_paths:
                 truncated_ref[0] = True
                 return
@@ -609,6 +612,7 @@ class PathGenerator:
         for entry in entry_nodes:
             per_entry_results: List[List[str]] = []
             entry_truncated = [False]
+            per_entry_count_ref = [0]
 
             self._dfs_enumerate(
                 G=G,
@@ -616,7 +620,7 @@ class PathGenerator:
                 visited={entry},
                 current_path=[entry],
                 results=per_entry_results,
-                per_entry_count=0,
+                per_entry_count_ref=per_entry_count_ref,
                 total_count_ref=total_count_ref,
                 truncated_ref=entry_truncated,
             )
