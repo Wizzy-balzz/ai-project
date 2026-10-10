@@ -567,6 +567,19 @@ class PathGenerator:
             used_historical_labels=False,  # Always False — guaranteed by design
         )
 
+        # Check for empty topology
+        if not topology.nodes:
+            logger.warning(
+                "Topology '%s' has no nodes — returning empty candidate set.",
+                topology.name,
+            )
+            summary.graph_node_count = 0
+            summary.graph_edge_count = 0
+            summary.entry_point_count = 0
+            summary.critical_asset_count = 0
+            summary.truncation_reason = "Empty topology (no nodes)."
+            return [], summary
+
         # Build the directed graph (existing Phase 1 logic, not duplicated)
         G = self._builder.build(topology)
         summary.graph_node_count = G.number_of_nodes()

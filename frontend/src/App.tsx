@@ -113,8 +113,27 @@ export const App: React.FC = () => {
             })}
           </div>
 
-          {/* Prominent Action: [ Create Blank Custom Scenario ] (Requirement 107) */}
+          {/* Prominent Action: Scenario Switcher & [ Create Blank Custom Scenario ] */}
           <div className="flex items-center gap-3">
+            {scenarios.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-champagne/50 hidden sm:inline uppercase tracking-wider">
+                  Scenario:
+                </span>
+                <select
+                  value={selectedScenarioId || ''}
+                  onChange={(e) => selectScenario(e.target.value)}
+                  className="px-3 py-1.5 rounded-full border border-champagne/20 bg-cellarNoir text-champagne text-xs font-mono focus:outline-none focus:border-vintageGold cursor-pointer max-w-[200px] truncate"
+                >
+                  {scenarios.map((sc) => (
+                    <option key={sc.id} value={sc.id}>
+                      {sc.name} ({sc.num_nodes}N)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={() => setIsCreatingScenario(true)}
               className="px-4 py-2 rounded-full border border-champagne/20 bg-champagne/5 hover:bg-vintageGold hover:text-cellarNoir hover:border-vintageGold text-xs text-champagne font-medium tracking-wide transition-all duration-300 flex items-center gap-1.5"

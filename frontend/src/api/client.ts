@@ -217,3 +217,38 @@ export const createScenario = async (name: string, description: string): Promise
   });
   return data;
 };
+
+export interface NodeCreatePayload {
+  ip_address: string;
+  role?: string;
+  os_type?: string;
+  cvss_score?: number;
+  asset_value?: number;
+  is_entry?: boolean;
+  is_target?: boolean;
+  hostname?: string;
+  vulnerabilities?: string[];
+  pos_x?: number;
+  pos_y?: number;
+}
+
+export interface EdgeCreatePayload {
+  source_id: string;
+  target_id: string;
+  edge_type?: string;
+  is_firewalled?: boolean;
+  is_encrypted?: boolean;
+  anomaly_score?: number;
+  port?: string;
+}
+
+export const createNode = async (scenarioId: string, node: NodeCreatePayload): Promise<TopologyResponse> => {
+  const { data } = await apiClient.post<TopologyResponse>(`/scenarios/${scenarioId}/nodes`, node);
+  return data;
+};
+
+export const createEdge = async (scenarioId: string, edge: EdgeCreatePayload): Promise<TopologyResponse> => {
+  const { data } = await apiClient.post<TopologyResponse>(`/scenarios/${scenarioId}/edges`, edge);
+  return data;
+};
+

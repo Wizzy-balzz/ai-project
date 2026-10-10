@@ -171,3 +171,14 @@ def test_node_creation_and_cascade_deletion():
     clear_res = client.post(f"/api/v1/scenarios/{sc_id}/nodes/clear")
     assert clear_res.status_code == 200
     assert len(clear_res.json()["topology"]["nodes"]) == 0
+
+    # 7. Verify simulation handles blank / cleared scenario gracefully without crashing
+    sim_empty = client.post(
+        f"/api/v1/scenarios/{sc_id}/simulate",
+        json={"isolated_node_ids": [], "blocked_edge_ids": [], "patched_cves": []},
+    )
+    assert sim_empty.status_code == 200
+    sim_data = sim_empty.json()
+    assert sim_data["simulated_risk"] == 0.0
+    assert sim_data["is_mitigated"] is True
+

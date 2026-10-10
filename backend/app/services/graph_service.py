@@ -505,6 +505,28 @@ def simulate_what_if_defense(
         patched_cves=set(req.patched_cves),
     )
 
+    if not topology_sim.nodes:
+        active_defenses = []
+        for nid in req.isolated_node_ids:
+            active_defenses.append({"type": "isolate_node", "target_id": nid, "status": "active"})
+        for eid in req.blocked_edge_ids:
+            active_defenses.append({"type": "block_edge", "target_id": eid, "status": "active"})
+        for cve in req.patched_cves:
+            active_defenses.append({"type": "patch_cve", "target_id": cve, "status": "applied"})
+
+        return SimulationResult(
+            scenario_id=scenario_id,
+            original_risk=round(base_risk, 4),
+            simulated_risk=0.0,
+            risk_drop_percentage=100.0 if base_risk > 0.0 else 0.0,
+            total_original_paths=base_paths_count,
+            severed_paths_count=base_paths_count,
+            remaining_paths_count=0,
+            active_defenses=active_defenses,
+            recommendation="All topology nodes isolated or empty scenario.",
+            is_mitigated=True,
+        )
+
     generator = get_path_generator()
     scorer = get_risk_scorer()
 

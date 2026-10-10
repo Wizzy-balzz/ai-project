@@ -13,6 +13,10 @@ import {
   deleteEdge as apiDeleteEdge,
   toggleFirewallEdge as apiToggleFirewall,
   clearScenarioNodes as apiClearNodes,
+  createNode as apiCreateNode,
+  createEdge as apiCreateEdge,
+  NodeCreatePayload,
+  EdgeCreatePayload,
 } from '../api/client';
 
 interface GraphState {
@@ -28,6 +32,8 @@ interface GraphState {
   onEdgesChange: (changes: EdgeChange[]) => void;
   
   loadGraph: (scenarioId: string, activePathId?: string) => Promise<void>;
+  addNode: (scenarioId: string, node: NodeCreatePayload) => Promise<void>;
+  addEdge: (scenarioId: string, edge: EdgeCreatePayload) => Promise<void>;
   deleteNode: (nodeId: string, scenarioId: string) => Promise<void>;
   deleteEdge: (edgeId: string) => Promise<void>;
   toggleFirewall: (edgeId: string) => Promise<void>;
@@ -67,6 +73,26 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     } catch (e: any) {
       console.error('Failed to load topology:', e);
       set({ error: e.message || 'Error loading topology', isLoading: false });
+    }
+  },
+
+  addNode: async (scenarioId: string, node: NodeCreatePayload) => {
+    try {
+      const data = await apiCreateNode(scenarioId, node);
+      set({ nodes: data.nodes, edges: data.edges });
+    } catch (e: any) {
+      console.error('Failed to create node:', e);
+      throw e;
+    }
+  },
+
+  addEdge: async (scenarioId: string, edge: EdgeCreatePayload) => {
+    try {
+      const data = await apiCreateEdge(scenarioId, edge);
+      set({ nodes: data.nodes, edges: data.edges });
+    } catch (e: any) {
+      console.error('Failed to create edge:', e);
+      throw e;
     }
   },
 
